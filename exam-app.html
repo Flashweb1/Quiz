@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Exam Portal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .timer {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #d9534f;
+        }
+
+        .question-card {
+            margin-bottom: 25px;
+        }
+
+        .question-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .options label {
+            display: block;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .options label:hover {
+            background: #f8f9fa;
+        }
+
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
+        .network-status {
+            font-size: 0.9rem;
+            color: #28a745;
+            margin-top: 10px;
+            text-align: right;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container" id="examSetup">
+        <h2>Standard Examination Portal</h2>
+        <p>Warning: This exam is proctored. Exiting full-screen or switching tabs will be recorded.</p>
+        <button class="btn" onclick="startExam()">Enter Full-Screen & Start Exam</button>
+    </div>
+
+    <div class="container" id="examActive" style="display: none;">
+        <div class="header">
+            <div>
+                <h2 style="margin: 0;">Final Semester Examination</h2>
+                <div class="network-status" id="syncStatus">Network: Connected | All progress saved</div>
+            </div>
+            <div class="timer" id="timerDisplay">60:00</div>
+        </div>
+
+        <div class="question-card">
+            <div class="question-text">1. What is the primary purpose of a heartbeat API in an online exam?</div>
+            <div class="options">
+                <label><input type="radio" name="q1" value="A" onchange="saveLocally()"> A) To track the student's
+                    pulse.</label>
+                <label><input type="radio" name="q1" value="B" onchange="saveLocally()"> B) To continuously sync answers
+                    to the server to prevent data loss.</label>
+                <label><input type="radio" name="q1" value="C" onchange="saveLocally()"> C) To make the backend look
+                    busy.</label>
+                <label><input type="radio" name="q1" value="D" onchange="saveLocally()"> D) To stream video to the
+                    proctor.</label>
+            </div>
+        </div>
+
+        <button class="btn" onclick="submitExam()">Submit Exam Securely</button>
+    </div>
+
+    <script>
+        let timeRemaining = 3600; // 60 minutes
+        let timerInterval;
+        let heartbeatInterval;
+        let cheatWarnings = 0;
+        const MOCK_USER_ID = 101;
+        const EXAM_ID = 1;
+
+        // Security: Disable Right Click & Copy/Paste
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('copy', event => event.preventDefault());
+        document.addEventListener('paste', event => event.preventDefault());
+
+        // Security: Tab Switching Detection
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === 'hidden' && document.getElementById('examActive').style.display === 'block') {
+                cheatWarnings++;
+                alert(`Security Warning: You left the exam window. This has been logged. (Warning ${cheatWarnings})`);
+                saveLocally(); // Force an immediate heartbeat
+            }
+        });
+
+        function startExam() {
+            // Request Fullscreen (Critical for standard exams)
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(err => console.log(err));
+            }
+
+            document.getElementById('examSetup').style.display = 'none';
+            document.getElementById('examActive').style.display = 'block';
+
+            // Start Local Timer
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                let m = Math.floor(timeRemaining / 60);
+                let s = timeRemaining % 60;
+                document.getElementById('timerDisplay').innerText = `${m}:${s.toString().padStart(2, '0')}`;
+                if (timeRemaining <= 0) submitExam();
+            }, 1000);
+
+            // Start Background Sync (Heartbeat every 30 seconds)
+            heartbeatInterval = setInterval(syncWithServer, 30000);
+        }
+
+        function saveLocally() {
+            // 1. Save to LocalStorage instantly (Offline tolerance)
+            const selected = document.querySelector('input[name="q1"]:checked');
+            const answers = { q1: selected ? selected.value : null };
+            localStorage.setItem('exam_backup', JSON.stringify(answers));
+
+            document.getElementById('syncStatus').innerText = "Network: Connected | Saving...";
+            document.getElementById('syncStatus').style.color = "#f59e0b";
+
+            // 2. Queue for server sync
+            syncWithServer();
+        }
+
+        async function syncWithServer() {
+            const saved = JSON.parse(localStorage.getItem('exam_backup') || '{}');
+            try {
+                // Simulate API Call to the Express backend we built
+                // await fetch('http://localhost:3000/api/exam/heartbeat', { ... })
+
+                setTimeout(() => {
+                    document.getElementById('syncStatus').innerText = "Network: Connected | All progress saved";
+                    document.getElementById('syncStatus').style.color = "#28a745";
+                }, 1000);
+            } catch (error) {
+                document.getElementById('syncStatus').innerText = "Network: Offline | Saved locally";
+                document.getElementById('syncStatus').style.color = "#dc3545";
+            }
+        }
+
+        function submitExam() {
+            clearInterval(timerInterval);
+            clearInterval(heartbeatInterval);
+            if (document.exitFullscreen) document.exitFullscreen();
+            alert("Exam submitted successfully to the server for secure validation and grading.");
+            window.location.reload();
+        }
+    </script>
+</body>
+
+</html>

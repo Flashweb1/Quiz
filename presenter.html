@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Presenter Dashboard</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --border: #475569;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 3rem;
+            margin-top: 2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .pin-display {
+            font-size: 6rem;
+            font-weight: 900;
+            letter-spacing: 15px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 1rem 0;
+        }
+
+        .timer-display {
+            font-size: 5rem;
+            font-weight: bold;
+            color: var(--warning);
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: 0.3s;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-success {
+            background: var(--success);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--border);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .participant-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary);
+            border-radius: 20px;
+            margin: 5px;
+            font-weight: bold;
+        }
+
+        .leaderboard-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 10px;
+            border-radius: 8px;
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 style="color: var(--text-muted);">Quizzy <span style="color: var(--primary);">Live</span> Presenter</h1>
+
+        <!-- Setup Screen -->
+        <div id="setupScreen" class="card">
+            <h2>Start a Live Classroom Session</h2>
+            <p style="color: var(--text-muted); margin-bottom: 2rem;">This will generate a 6-digit PIN. Students can
+                join from the homepage.</p>
+            <button class="btn" onclick="startSession()" id="startBtn">Create Session</button>
+            <p><a href="admin.html" style="color: var(--text-muted); margin-top:20px; display:inline-block;">&larr; Back
+                    to Admin</a></p>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobbyScreen" class="card hidden">
+            <h3>Join at the homepage with PIN:</h3>
+            <div class="pin-display" id="displayPin">000000</div>
+            <p style="font-size: 1.2rem;">Waiting for players to join... <strong id="playerCount">0</strong></p>
+            <div id="participantList" style="margin: 20px 0; min-height: 50px;"></div>
+            <button class="btn btn-success" onclick="nextQuestion()" id="firstQBtn" disabled>Start Question 1</button>
+        </div>
+
+        <!-- Active Question Screen -->
+        <div id="activeScreen" class="card hidden">
+            <div class="timer-display" id="questionTimer">20</div>
+            <h2 id="questionText" style="font-size: 2rem; margin: 2rem 0;">Question goes here?</h2>
+            <p id="answerStats" style="color: var(--success); font-weight:bold;">Answers locked in: 0</p>
+            <button class="btn btn-secondary" onclick="showLeaderboard()">Skip Timer & Show Results</button>
+        </div>
+
+        <!-- Leaderboard Screen -->
+        <div id="leaderboardScreen" class="card hidden">
+            <h2>Correct Answer: <span id="revealAnswer" style="color: var(--success);"></span></h2>
+            <h3 style="margin-top: 2rem;">Top 5 Leaderboard</h3>
+            <div id="leaderboardRanks" style="margin-bottom: 2rem;"></div>
+            <button class="btn btn-success" onclick="nextQuestion()" id="nextQBtn">Next Question</button>
+            <br><button class="btn btn-secondary" onclick="endSession()"
+                style="margin-top: 1rem; color: var(--danger); border-color: var(--danger);">End Session</button>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC4RxjQ_dP1Mxur6cF7QWCZRYHFl9gobSs",
+            authDomain: "quiz-38d2c.firebaseapp.com",
+            projectId: "quiz-38d2c",
+            storageBucket: "quiz-38d2c.firebasestorage.app",
+            messagingSenderId: "749897575230",
+            appId: "1:749897575230:web:e4d729f197938e71999a6f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let pin = "";
+        let sessionQuestions = [];
+        let currentIndex = -1;
+        let sessionData = null;
+        let timerInterval = null;
+
+        window.startSession = async function () {
+            document.getElementById('startBtn').textContent = "Loading Questions...";
+
+            // 1. Fetch only multiple-choice questions
+            const qSnap = await getDocs(collection(db, "questions"));
+            sessionQuestions = [];
+            qSnap.forEach(d => {
+                const q = d.data();
+                if (q.type === 'multiple-choice') sessionQuestions.push(q);
+            });
+
+            if (sessionQuestions.length === 0) {
+                alert("No multiple-choice questions found in the database!");
+                document.getElementById('startBtn').textContent = "Create Session";
+                return;
+            }
+
+            // Shuffle questions to make it random
+            sessionQuestions = sessionQuestions.sort(() => 0.5 - Math.random()).slice(0, 10);
+
+            // 2. Generate PIN & Setup Doc
+            pin = Math.floor(100000 + Math.random() * 900000).toString();
+            await setDoc(doc(db, "liveSessions", pin), {
+                pin: pin,
+                state: 'lobby',
+                currentQuestionIndex: -1,
+                questions: sessionQuestions,
+                participants: {}
+            });
+
+            document.getElementById('setupScreen').classList.add('hidden');
+            document.getElementById('lobbyScreen').classList.remove('hidden');
+            document.getElementById('displayPin').textContent = pin;
+
+            // 3. Listen to participants joining
+            onSnapshot(doc(db, "liveSessions", pin), (docSnap) => {
+                sessionData = docSnap.data();
+                const pKeys = Object.keys(sessionData.participants || {});
+                document.getElementById('playerCount').textContent = pKeys.length;
+                document.getElementById('firstQBtn').disabled = pKeys.length === 0;
+
+                const list = document.getElementById('participantList');
+                list.innerHTML = pKeys.map(k => `<span class="participant-badge">${sessionData.participants[k].name}</span>`).join('');
+
+                if (sessionData.state === 'answering') {
+                    const answeredCount = pKeys.filter(k => sessionData.participants[k].currentAnswer !== null).length;
+                    document.getElementById('answerStats').textContent = `Answers locked in: ${answeredCount} / ${pKeys.length}`;
+                }
+            });
+        };
+
+        window.nextQuestion = async function () {
+            currentIndex++;
+            if (currentIndex >= sessionQuestions.length) return endSession();
+
+            // Clear previous answers
+            let updates = { state: 'answering', currentQuestionIndex: currentIndex, endTime: Date.now() + 20000 };
+            Object.keys(sessionData.participants || {}).forEach(k => updates[`participants.${k}.currentAnswer`] = null);
+
+            await updateDoc(doc(db, "liveSessions", pin), updates);
+
+            document.getElementById('lobbyScreen').classList.add('hidden');
+            document.getElementById('leaderboardScreen').classList.add('hidden');
+            document.getElementById('activeScreen').classList.remove('hidden');
+            document.getElementById('questionText').textContent = sessionQuestions[currentIndex].question;
+
+            let timeLeft = 20;
+            document.getElementById('questionTimer').textContent = timeLeft;
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('questionTimer').textContent = timeLeft;
+                if (timeLeft <= 0) showLeaderboard();
+            }, 1000);
+        };
+
+        window.showLeaderboard = async function () {
+            clearInterval(timerInterval);
+            const currentQ = sessionQuestions[currentIndex];
+
+            // Grade answers
+            let updates = { state: 'leaderboard' };
+            const pKeys = Object.keys(sessionData.participants || {});
+
+            pKeys.forEach(uid => {
+                const p = sessionData.participants[uid];
+                if (p.currentAnswer === currentQ.answer) {
+                    updates[`participants.${uid}.score`] = (p.score || 0) + 100;
+                    sessionData.participants[uid].score = (p.score || 0) + 100; // optimistically update local state for sort
+                }
+            });
+
+            await updateDoc(doc(db, "liveSessions", pin), updates);
+
+            document.getElementById('activeScreen').classList.add('hidden');
+            document.getElementById('leaderboardScreen').classList.remove('hidden');
+            document.getElementById('revealAnswer').textContent = currentQ.answer;
+
+            const ranksHtml = pKeys
+                .map(k => sessionData.participants[k])
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 5)
+                .map((p, i) => `<div class="leaderboard-row"><span>#${i + 1} ${p.name}</span> <strong style="color:var(--primary);">${p.score}</strong></div>`)
+                .join('');
+
+            document.getElementById('leaderboardRanks').innerHTML = ranksHtml || "<p>No players!</p>";
+
+            if (currentIndex === sessionQuestions.length - 1) {
+                document.getElementById('nextQBtn').textContent = "Finish & Return Home";
+            }
+        };
+
+        window.endSession = async function () {
+            clearInterval(timerInterval);
+            // Optionally delete the session doc here to clean up
+            alert("Session Ended!");
+            window.location.href = "admin.html";
+        };
+    </script>
+</body>
+
+</html>

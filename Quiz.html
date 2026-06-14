@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Verses Quiz (Age 16–19)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 800px;
+            margin: auto;
+            padding-bottom: 50px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .question-block {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+
+        .question-text {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 60px;
+            resize: vertical;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        #timer {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #d9534f;
+            position: fixed;
+            top: 10px;
+            right: 20px;
+            background: white;
+            padding: 10px;
+            border: 2px solid #d9534f;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+
+        #submit-btn {
+            display: block;
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 1.2em;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        #submit-btn:hover {
+            background-color: #218838;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 5px;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Memory Verses Quiz (Age 16–19)</h1>
+    <div id="timer">Time Left: 60:00</div>
+
+    <div class="input-group">
+        <label for="fullname">Full Name:</label>
+        <input type="text" id="fullname" placeholder="Enter your full name">
+    </div>
+
+    <div id="quiz-container"></div>
+
+    <button id="submit-btn" onclick="submitQuiz()">Submit Quiz</button>
+    <div id="result"></div>
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js"; // Note: getAnalytics is not imported as it's not used in the current script.
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC4RxjQ_dP1Mxur6cF7QWCZRYHFl9gobSs",
+            authDomain: "quiz-38d2c.firebaseapp.com",
+            projectId: "quiz-38d2c",
+            storageBucket: "quiz-38d2c.firebasestorage.app",
+            messagingSenderId: "749897575230",
+            appId: "1:749897575230:web:e4d729f197938e71999a6f",
+            measurementId: "G-FVL08KDFHQ"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        // If you intend to use Firebase Analytics, you'll need to import getAnalytics and initialize it here.
+
+        const questions = [
+            { question: "According to the lesson New birth in Christ, what does the memory verse teach about a person who is in Christ regarding old things and new life?", answer: "Therefore if any man be in Christ he is a new creature old things are passed away behold all things are become new (2 Corinthians 5:17)" },
+            { question: "According to the lesson New birth in Christ, what transformation takes place in someone who is in Christ?", answer: "Therefore if any man be in Christ he is a new creature old things are passed away behold all things are become new (2 Corinthians 5:17)" },
+            { question: "According to the lesson What is worship, how does the memory verse explain the proper way to worship God?", answer: "God is a Spirit and they that worship him must worship him in spirit and in truth (John 4:24)" },
+            { question: "According to the lesson What is worship, what instruction is given about worshipping God?", answer: "God is a Spirit and they that worship him must worship him in spirit and in truth (John 4:24)" },
+            { question: "According to the lesson Worship God the Father, what kind of worshippers does the Father seek according to the memory verse?", answer: "But the hour cometh and now is when the true worshippers shall worship the Father in spirit and in truth for the Father seeketh such to worship him (John 4:23)" },
+            { question: "According to the lesson Worship God the Father, what does God the Father desire from worshippers?", answer: "But the hour cometh and now is when the true worshippers shall worship the Father in spirit and in truth for the Father seeketh such to worship him (John 4:23)" },
+            { question: "According to the lesson Worship God the Son, what does Jesus declare about Himself in relation to the Father?", answer: "Jesus saith unto him I am the way the truth and the life no man cometh unto the Father but by me (John 14:6)" },
+            { question: "According to the lesson Worship God the Son, how does a person gain access to God the Father?", answer: "Jesus saith unto him I am the way the truth and the life no man cometh unto the Father but by me (John 14:6)" },
+            { question: "According to the lesson Worship God the Holy Spirit, what role does the Holy Spirit play in teaching believers?", answer: "But the Comforter which is the Holy Ghost whom the Father will send in my name he shall teach you all things and bring all things to your remembrance whatsoever I have said unto you (John 14:26)" },
+            { question: "According to the lesson Worship God the Holy Spirit, what does the Holy Spirit help believers remember?", answer: "But the Comforter which is the Holy Ghost whom the Father will send in my name he shall teach you all things and bring all things to your remembrance whatsoever I have said unto you (John 14:26)" },
+            { question: "According to the lesson True worshipper, how are true worshippers expected to worship God?", answer: "But the hour cometh and now is when the true worshippers shall worship the Father in spirit and in truth for the Father seeketh such to worship him (John 4:23)" },
+            { question: "According to the lesson True worshipper, what kind of worshippers does God seek?", answer: "But the hour cometh and now is when the true worshippers shall worship the Father in spirit and in truth for the Father seeketh such to worship him (John 4:23)" },
+            { question: "According to the lesson Weapons of worship – Worshipping with our whole life, what should believers present to God?", answer: "I beseech you therefore brethren by the mercies of God that ye present your bodies a living sacrifice holy acceptable unto God which is your reasonable service (Romans 12:1)" },
+            { question: "According to the lesson Weapons of worship – Worshipping with our whole life, how is this act of worship described?", answer: "I beseech you therefore brethren by the mercies of God that ye present your bodies a living sacrifice holy acceptable unto God which is your reasonable service (Romans 12:1)" },
+            { question: "According to the lesson Weapons of worship – Prayer, how should believers pray at all times?", answer: "Praying always with all prayer and supplication in the Spirit and watching thereunto with all perseverance and supplication for all saints (Ephesians 6:18)" },
+            { question: "According to the lesson Weapons of worship – Prayer, who should believers consistently pray for?", answer: "Praying always with all prayer and supplication in the Spirit and watching thereunto with all perseverance and supplication for all saints (Ephesians 6:18)" },
+            { question: "According to the lesson Weapons of worship – Word of God, what is the Word of God compared to?", answer: "Thy word is a lamp unto my feet and a light unto my path (Psalm 119:105)" },
+            { question: "According to the lesson Weapons of worship – Faith, what is impossible without faith?", answer: "But without faith it is impossible to please him for he that cometh to God must believe that he is and that he is a rewarder of them that diligently seek him (Hebrews 11:6)" },
+            { question: "According to the lesson Weapons of worship – Faith, what must a believer believe about God?", answer: "But without faith it is impossible to please him for he that cometh to God must believe that he is and that he is a rewarder of them that diligently seek him (Hebrews 11:6)" },
+            { question: "According to the lesson Weapons of worship – Songs, what kinds of songs are believers instructed to use in worship?", answer: "Speaking to yourselves in psalms and hymns and spiritual songs singing and making melody in your heart to the Lord (Ephesians 5:19)" },
+            { question: "According to the lesson Vain worship, what kind of fight are believers instructed to engage in?", answer: "Fight the good fight of faith lay hold on eternal life whereunto thou art also called and hast professed a good profession before many witnesses (1 Timothy 6:12)" },
+            { question: "According to the lesson Repentance, what must accompany baptism for the forgiveness of sins?", answer: "Then Peter said unto them Repent and be baptized every one of you in the name of Jesus Christ for the remission of sins and ye shall receive the gift of the Holy Ghost (Acts 2:38)" },
+            { question: "According to the lesson Forgiveness, how should believers treat one another when offended?", answer: "Forbearing one another and forgiving one another if any man have a quarrel against any even as Christ forgave you so also do ye (Colossians 3:13)" },
+            { question: "According to the lesson Homosexuality and Lesbianism, how does Scripture describe same-sex relationships?", answer: "If a man also lie with mankind as he lieth with a woman both of them have committed an abomination they shall surely be put to death their blood shall be upon them (Leviticus 20:13)" },
+            { question: "According to the lesson Benefits of worship – Unspeakable Joy, what kind of joy do believers experience?", answer: "Whom having not seen ye love in whom though now ye see him not yet believing ye rejoice with joy unspeakable and full of glory (1 Peter 1:8)" },
+            { question: "According to the lesson Benefits of worship – Spiritual growth, how does God guide His people?", answer: "I will instruct thee and teach thee in the way which thou shalt go I will guide thee with mine eye (Psalm 32:8)" },
+            { question: "According to the lesson Drug Abuse, what should not control a believer’s life?", answer: "All things are lawful for me, but all things are not helpful all things are lawful for me, but I will not be dominated by anything (1 Corinthians 6:12)" },
+            { question: "According to the lesson Transgender, how did God create mankind?", answer: "So God created man in his own image in the image of God created he him male and female created he them (Genesis 1:27)" },
+            { question: "According to the lesson Sexual immorality, what instruction is given to believers?", answer: "Flee fornication Every sin that a man doeth is without the body but he that committeth fornication sinneth against his own body (1 Corinthians 6:18)" },
+            { question: "According to the lesson Saving and investment, how does a foolish person handle resources?", answer: "There is treasure to be desired and oil in the dwelling of the wise but a foolish man spendeth it up (Proverbs 21:20)" },
+            { question: "According to the lesson Gambling, what happens to wealth gained without labour?", answer: "Wealth gotten by vanity shall be diminished but he that gathereth by labour shall increase (Proverbs 13:11)" },
+            { question: "According to the lesson Suicide (Not an option), what warning is given about willful sin?", answer: "For if we sin wilfully after that we have received the knowledge of the truth there remaineth no more sacrifice for sins (Hebrews 10:26)" },
+            { question: "According to the lesson Capacity building, what instruction is given about expansion?", answer: "Enlarge the place of thy tent and let them stretch forth the curtains of thine habitations spare not lengthen thy cords and strengthen thy stakes (Isaiah 54:2)" },
+            { question: "According to the lesson Godly relationship, what is the second greatest commandment?", answer: "Jesus said unto him Thou shalt love the Lord thy God with all thy heart and with all thy soul and with all thy mind This is the first and great commandment And the second is like unto it Thou shalt love thy neighbour as thyself (Matthew 22:37–39)" },
+            { question: "According to the lesson Family altar, what is described as good and pleasant?", answer: "Behold how good and how pleasant it is for brethren to dwell together in unity (Psalm 133:1)" },
+            { question: "According to the lesson Content creation, what happened in the beginning?", answer: "In the beginning God created the heaven and the earth (Genesis 1:1)" },
+            { question: "According to the lesson Witnessing and follow-up, what will believers be able to do through faith in Christ?", answer: "Verily verily I say unto you He that believeth on me the works that I do shall he do also and greater works than these shall he do because I go unto my Father (John 14:12)" },
+            { question: "According to the lesson Financially prudent, what do wise people do when they see danger?", answer: "The prudent see danger and take refuge but the simple keep going and pay the penalty (Proverbs 22:3)" },
+            { question: "According to the lesson Fashion, what kind of inner character is valuable before God?", answer: "Whose adorning let it not be that outward adorning of plaiting the hair and of wearing of gold or of putting on of apparel But let it be the hidden man of the heart in that which is not corruptible even the ornament of a meek and quiet spirit which is in the sight of God of great price (1 Peter 3:3–4)" },
+            { question: "According to the lesson Social media influence, what should believers avoid placing before their eyes?", answer: "I will set no wicked thing before mine eyes I hate the work of them that turn aside it shall not cleave to me (Psalm 101:3)" },
+            { question: "According to the lesson Debt management, what is the only debt believers are allowed to owe?", answer: "Owe no man any thing but to love one another: for he that loveth another hath fulfilled the law (Romans 13:8)" },
+            { question: "According to the lesson Managing stress, what should replace anxiety in a believer’s life?", answer: "Do not be anxious about anything but in everything by prayer and supplication with thanksgiving let your requests be made known to God (Philippians 4:6)" },
+            { question: "According to the lesson Christian virtue, what should believers focus their thoughts on?", answer: "Finally brethren whatsoever things are true whatsoever things are honest whatsoever things are just whatsoever things are pure whatsoever things are lovely whatsoever things are of good report if there be any virtue and if there be any praise think on these things (Philippians 4:8)" },
+            { question: "According to the lesson Good governance, where does all authority come from?", answer: "Let every soul be subject unto the higher powers For there is no power but of God the powers that be are ordained of God (Romans 13:1)" },
+            { question: "According to the lesson Double standard life, what does God condemn in fairness and honesty?", answer: "Divers weights are an abomination unto the LORD and a false balance is not good (Proverbs 20:23)" },
+            { question: "According to the lesson Baptism, what follows repentance?", answer: "Then Peter said unto them Repent and be baptized every one of you in the name of Jesus Christ for the remission of sins and ye shall receive the gift of the Holy Ghost (Acts 2:38)" },
+            { question: "According to the lesson Holy communion, what is being declared until Christ returns?", answer: "For as often as ye eat this bread and drink this cup ye do shew the Lord's death till he come (1 Corinthians 11:26)" },
+            { question: "According to the lesson Rapture, what mystery is revealed about believers at Christ’s coming?", answer: "Behold I shew you a mystery We shall not all sleep but we shall all be changed (1 Corinthians 15:51)" },
+            { question: "According to the lesson Crown of glory, what reward will faithful believers receive at Christ’s appearing?", answer: "And when the chief Shepherd shall appear ye shall receive a crown of glory that fadeth not away (1 Peter 5:4)" },
+            { question: "According to the lesson Crown of glory, what eternal reward is promised to faithful believers?", answer: "And when the chief Shepherd shall appear ye shall receive a crown of glory that fadeth not away (1 Peter 5:4)" }
+        ];
+
+        const quizContainer = document.getElementById("quiz-container");
+
+        // Dynamically render questions
+        questions.forEach((q, index) => {
+            const questionBlock = document.createElement("div");
+            questionBlock.className = "question-block";
+            questionBlock.innerHTML = `
+        <div class="question-text">${index + 1}. ${q.question}</div>
+        <textarea name="q${index}" placeholder="Type your memory verse answer here..."></textarea>
+      `;
+            quizContainer.appendChild(questionBlock);
+        });
+
+        // Timer setup (e.g., 60 minutes)
+        let timeLeft = 3600;
+        const timerDisplay = document.getElementById("timer");
+
+        const countdown = setInterval(() => {
+            if (timeLeft <= 0) {
+                clearInterval(countdown);
+                window.submitQuiz();
+            } else {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerDisplay.textContent = `Time Left: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                timeLeft--;
+            }
+        }, 1000);
+
+        // Submit Quiz logic
+        window.submitQuiz = async function () {
+            const fullname = document.getElementById("fullname").value.trim();
+            if (!fullname) {
+                alert("Please enter your full name before submitting.");
+                return;
+            }
+
+            // Stop timer only after validation passes
+            clearInterval(countdown);
+
+            let score = 0;
+            let answersArray = [];
+
+            // Helper function to remove punctuation and extra spaces for fairer grading
+            const normalizeText = (text) => {
+                return text.replace(/[^\w\s]|_/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+            };
+
+            questions.forEach((q, index) => {
+                const textarea = document.querySelector(`textarea[name="q${index}"]`);
+                if (textarea) {
+                    const userAnswer = normalizeText(textarea.value);
+                    const correctAnswer = normalizeText(q.answer);
+
+                    // Check if the normalized user answer matches the first ~40 characters of the normalized correct answer
+                    if (userAnswer.length > 0 && userAnswer.includes(correctAnswer.substring(0, Math.min(correctAnswer.length, 40)))) {
+                        score++;
+                        textarea.style.backgroundColor = "#d4edda"; // Light green for correct
+                    } else {
+                        textarea.style.backgroundColor = "#f8d7da"; // Light red for incorrect
+
+                        // Display the correct answer below the incorrect or empty submission
+                        const feedbackDiv = document.createElement("div");
+                        feedbackDiv.style.marginTop = "10px";
+                        feedbackDiv.style.padding = "10px";
+                        feedbackDiv.style.backgroundColor = "#e2e3e5";
+                        feedbackDiv.style.color = "#383d41";
+                        feedbackDiv.style.borderRadius = "5px";
+                        feedbackDiv.innerHTML = `<strong>Correct Answer:</strong><br>${q.answer}`;
+                        textarea.parentElement.appendChild(feedbackDiv);
+                    }
+
+                    // Save the specific answer data for the Admin Dashboard
+                    answersArray.push({
+                        lesson: "Question " + (index + 1),
+                        question: q.question,
+                        correctAnswer: q.answer,
+                        userAnswer: textarea.value.trim() || "[Left Blank]"
+                    });
+
+                    // Disable the textarea to prevent further editing
+                    textarea.disabled = true;
+                }
+            });
+
+            // Disable name input and submit button
+            document.getElementById("fullname").disabled = true;
+            document.getElementById("submit-btn").disabled = true;
+
+            document.getElementById("result").innerHTML = `
+        ${fullname}, your score is <span style="color:#28a745;">${score}/${questions.length}</span>
+        <p>Thank you for completing the quiz!</p>`;
+
+            // Scroll to the result section smoothly
+            document.getElementById("result").scrollIntoView({ behavior: "smooth" });
+
+            try {
+                // Save score to Firestore
+                await addDoc(collection(db, "quizResults"), {
+                    fullname,
+                    answers: answersArray,
+                    score,
+                    total: questions.length,
+                    submittedAt: new Date().toISOString()
+                });
+
+                alert("Quiz submitted and saved successfully!");
+            } catch (error) {
+                console.error("Firebase Add Error: ", error);
+                alert("Error saving result. Check console for details.");
+            }
+        };
+    </script>
+</body>
+
+</html>

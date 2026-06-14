@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Admin Dashboard</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin-top: 0;
+        }
+
+        /* Login Screen */
+        #loginScreen {
+            max-width: 400px;
+            margin: 100px auto;
+            text-align: center;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        input[type="email"] {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0 0 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background: var(--text-muted);
+        }
+
+        /* Dashboard Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #f1f5f9;
+        }
+
+        tbody tr {
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        tbody tr:hover {
+            background: #e2e8f0;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+
+        /* Details Screen */
+        .answer-block {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .correct-ans {
+            color: var(--success);
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .user-ans {
+            color: var(--danger);
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Toggle Switch from index.html */
+        .toggle {
+            width: 50px;
+            height: 26px;
+            background: var(--text-muted);
+            border-radius: 13px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle.active {
+            background: var(--success);
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+
+        .toggle.active::after {
+            transform: translateX(24px);
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-graded {
+            background: #d1fae5;
+            color: #059669;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- 1. LOGIN SCREEN -->
+        <div id="loginScreen" class="card">
+            <h2>Admin Login</h2>
+            <p>Sign in with your admin account to view submissions.</p>
+            <input type="email" id="adminEmail" placeholder="Admin Email">
+            <input type="password" id="adminPassword" placeholder="Enter Password">
+            <button onclick="checkPassword()">Login</button>
+            <p id="loginError" style="color: red; display: none; margin-top: 10px;">Invalid email or password.</p>
+        </div>
+
+        <!-- 2. DASHBOARD SCREEN -->
+        <div id="dashboardScreen" class="card hidden">
+            <div
+                style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                <button onclick="switchTab('submissions')" id="tabSubmissions" class="btn btn-primary"
+                    style="flex: 1;">Student Submissions</button>
+                <button onclick="switchTab('questions')" id="tabQuestions" class="btn btn-secondary"
+                    style="flex: 1; background: var(--surface-light); color: var(--text); border: 1px solid var(--border);">Question
+                    Bank</button>
+                <button onclick="window.location.href='presenter.html'" class="btn btn-primary"
+                    style="flex: 1; background: #8b5cf6;">Live Presenter Mode &rarr;</button>
+                <button onclick="logoutAdmin()" class="btn btn-secondary"
+                    style="background: var(--danger); color: white; border: none; padding: 10px 20px;">Logout</button>
+            </div>
+
+            <!-- Submissions Tab -->
+            <div id="submissionsTab">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2>Student Submissions</h2>
+                    <button onclick="loadData()">Refresh Data</button>
+                </div>
+
+                <div
+                    style="background: var(--surface-light); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1rem;">Quiz Settings</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600;">Allow Students to Start Quiz</span>
+                        <div class="toggle" id="quizActiveToggle" onclick="toggleQuizStatus()"></div>
+                    </div>
+                    <p id="quizStatusMsg" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;"></p>
+                </div>
+
+                <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Search by student name..."
+                    onkeyup="filterTable()">
+
+                <p id="loadingMsg">Loading records from Firebase...</p>
+
+                <table id="submissionsTable" class="hidden">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Score</th>
+                            <th>Questions Answered</th>
+                            <th>Time Taken</th>
+                            <th>Submitted Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Questions Tab -->
+            <div id="questionsTab" class="hidden">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2>Question Bank</h2>
+                    <button onclick="seedQuestions()" style="background: var(--warning); color: black;">Seed Demo
+                        Questions</button>
+                </div>
+                <div class="answer-block" style="background: white;">
+                    <h4 style="margin-top: 0;">Add New Question</h4>
+                    <select id="newQType" class="search-bar" style="margin-bottom: 8px;"
+                        onchange="toggleOptionsField()">
+                        <option value="multiple-choice">Multiple Choice</option>
+                        <option value="short-answer">Short Answer</option>
+                    </select>
+                    <input type="text" id="newQCategory" placeholder="Category (e.g. Science)" class="search-bar"
+                        style="margin-bottom: 8px;">
+                    <input type="text" id="newQText" placeholder="Question Text" class="search-bar"
+                        style="margin-bottom: 8px;">
+                    <input type="text" id="newQOptions"
+                        placeholder="Comma-separated Options (e.g. Earth, Mars, Venus) - ONLY for Multiple Choice"
+                        class="search-bar" style="margin-bottom: 8px;">
+                    <input type="text" id="newQAnswer" placeholder="Correct Answer" class="search-bar"
+                        style="margin-bottom: 8px;">
+                    <input type="text" id="newQRef" placeholder="Reference (e.g. 2 Corinthians 5:17)" class="search-bar"
+                        style="margin-bottom: 8px;">
+                    <button onclick="addQuestion()" style="width: 100%;">Add Question</button>
+                </div>
+                <p id="qLoadingMsg">Loading questions...</p>
+                <div id="questionsList"></div>
+            </div>
+        </div>
+
+        <!-- 3. DETAILS SCREEN -->
+        <div id="detailsScreen" class="card hidden" style="padding-top: 0;">
+            <div
+                style="position: sticky; top: 0; background: var(--surface); z-index: 10; padding: 2rem 0 1rem 0; border-bottom: 1px solid var(--border); margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <button class="btn-secondary" onclick="showDashboard()">← Back to Submissions</button>
+                        <h2 id="studentName" style="margin-top: 20px;">Student Name</h2>
+                        <p style="margin-bottom: 0;"><strong>Total Questions:</strong> <span id="studentTotal"></span> |
+                            <strong>Time Taken:</strong> <span id="studentTime"></span>
+                        </p>
+                    </div>
+                    <div id="detailsActionContainer" style="margin-top: 20px; display: flex; gap: 10px;"></div>
+                </div>
+            </div>
+
+            <div id="answersContainer"></div>
+        </div>
+
+    </div>
+
+    <!-- Logic -->
+    <script>
+        let submissionsData = [];
+        let currentSubmissionIndex = -1;
+
+        function showDashboard() {
+            document.getElementById('detailsScreen').classList.add('hidden');
+            document.getElementById('dashboardScreen').classList.remove('hidden');
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m}m ${s}s`;
+        }
+
+        function viewDetails(index) {
+            currentSubmissionIndex = index;
+            const data = submissionsData[index];
+
+            document.getElementById('studentName').textContent = "Answers for: " + data.fullname;
+            document.getElementById('studentTotal').textContent = data.totalQuestions;
+            document.getElementById('studentTime').textContent = formatTime(data.timeTakenSeconds);
+
+            const actionContainer = document.getElementById('detailsActionContainer');
+            actionContainer.innerHTML = `
+                <button class="btn-secondary" onclick="autoGrade()">Auto-Grade</button>
+                <button onclick="saveGrade('${data.id}')" style="background: var(--success);">Save Grade</button>
+            `;
+
+            const container = document.getElementById('answersContainer');
+            container.innerHTML = '';
+
+            if (!data.answers || data.answers.length === 0) {
+                container.innerHTML = '<p>No answers recorded for this submission.</p>';
+            } else {
+                data.answers.forEach((ans, i) => {
+                    // Skip questions they didn't reach/answer
+                    if (!ans) return;
+
+                    const isCorrectChecked = ans.isCorrect === true ? 'checked' : '';
+                    const isIncorrectChecked = ans.isCorrect === false ? 'checked' : '';
+
+                    const div = document.createElement('div');
+                    div.className = 'answer-block';
+                    div.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1; padding-right: 15px;">
+                                <div><strong>Q${i + 1}: ${ans.category || ans.lesson || 'General'}</strong></div>
+                                <div style="margin-top:5px; color:#64748b;">${ans.question}</div>
+                                <div class="user-ans">Their Answer: <span style="font-weight:normal; color:#1e293b;">${ans.userAnswer || '[Left Blank]'}</span></div>
+                                <div class="correct-ans">Correct Answer: <span style="font-weight:normal; color:#1e293b;">${ans.correctAnswer}</span></div>
+                                ${ans.hintsUsed > 0 ? `<div style="margin-top:5px; font-size:0.9em; color:#f59e0b;">Hints used: ${ans.hintsUsed}</div>` : ''}
+                            </div>
+                            <div class="grading-controls" style="min-width: 110px; text-align: right; background: white; padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+                                <label style="display: block; margin-bottom: 8px; color: var(--success); cursor: pointer;"><input type="radio" name="grade_${i}" value="correct" ${isCorrectChecked}> Correct</label>
+                                <label style="display: block; color: var(--danger); cursor: pointer;"><input type="radio" name="grade_${i}" value="incorrect" ${isIncorrectChecked}> Incorrect</label>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            document.getElementById('dashboardScreen').classList.add('hidden');
+            document.getElementById('detailsScreen').classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        window.filterTable = function () {
+            const input = document.getElementById("searchInput").value.toLowerCase();
+            const rows = document.getElementById("tableBody").getElementsByTagName("tr");
+            for (let i = 0; i < rows.length; i++) {
+                const nameCell = rows[i].getElementsByTagName("td")[0];
+                if (nameCell) {
+                    const nameText = nameCell.textContent || nameCell.innerText;
+                    if (nameText.toLowerCase().indexOf(input) > -1) {
+                        rows[i].style.display = "";
+                    } else {
+                        rows[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        window.exportToCSV = function () {
+            if (!submissionsData || submissionsData.length === 0) {
+                alert("No data to export.");
+                return;
+            }
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Name,Status,Score,Questions Answered,Time Taken,Submitted Date\n";
+            submissionsData.forEach(row => {
+                const dateObj = new Date(row.submittedAt);
+                const dateString = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString();
+                // Escape double quotes inside text strings to maintain valid CSV structure
+                const name = (row.fullname || '').replace(/"/g, '""');
+                const status = row.status || 'Pending';
+                const score = row.score !== undefined ? `${row.score}/${row.totalQuestions}` : 'N/A';
+                const timeTaken = formatTime(row.timeTakenSeconds || 0);
+                csvContent += `"${name}","${status}","${score}","${row.totalQuestions || 0}","${timeTaken}","${dateString}"\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "quizzy_results.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+
+    <!-- Firebase Integration -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc, setDoc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC4RxjQ_dP1Mxur6cF7QWCZRYHFl9gobSs",
+            authDomain: "quiz-38d2c.firebaseapp.com",
+            projectId: "quiz-38d2c",
+            storageBucket: "quiz-38d2c.firebasestorage.app",
+            messagingSenderId: "749897575230",
+            appId: "1:749897575230:web:e4d729f197938e71999a6f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const settingsDocRef = doc(db, "settings", "quizAccess");
+
+        async function loadQuizStatus() {
+            const toggle = document.getElementById('quizActiveToggle');
+            const statusMsg = document.getElementById('quizStatusMsg');
+            try {
+                const docSnap = await getDoc(settingsDocRef);
+                const isActive = docSnap.exists() && docSnap.data().isQuizActive;
+                toggle.classList.toggle('active', isActive);
+                statusMsg.textContent = isActive ? 'The quiz is currently ACTIVE for students.' : 'The quiz is currently INACTIVE. Students cannot start.';
+            } catch (error) {
+                console.error("Error getting quiz status:", error);
+                statusMsg.textContent = 'Could not load quiz status.';
+                toggle.classList.remove('active');
+            }
+        }
+
+        window.toggleQuizStatus = async function () {
+            const toggle = document.getElementById('quizActiveToggle');
+            const statusMsg = document.getElementById('quizStatusMsg');
+            const newStatus = !toggle.classList.contains('active');
+            try {
+                statusMsg.textContent = 'Updating...';
+                await setDoc(settingsDocRef, { isQuizActive: newStatus });
+                toggle.classList.toggle('active', newStatus);
+                statusMsg.textContent = newStatus ? 'The quiz is now ACTIVE for students.' : 'The quiz is now INACTIVE. Students cannot start.';
+            } catch (error) {
+                console.error("Error updating quiz status:", error);
+                alert('Failed to update quiz status.');
+                loadQuizStatus(); // Revert UI on failure
+            }
+        };
+
+        window.autoGrade = function () {
+            const data = submissionsData[currentSubmissionIndex];
+            const normalizeText = (text) => text.replace(/[^\w\s]|_/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+
+            data.answers.forEach((ans, i) => {
+                if (!ans) return;
+
+                const userAnswer = normalizeText(ans.userAnswer || '');
+                const correctAnswer = normalizeText(ans.correctAnswer || '');
+
+                // Automatically mark correct if they got the first 40 characters right
+                const isCorrect = userAnswer.length > 0 && userAnswer.includes(correctAnswer.substring(0, Math.min(correctAnswer.length, 40)));
+
+                const radios = document.getElementsByName(`grade_${i}`);
+                for (const radio of radios) {
+                    if (radio.value === 'correct' && isCorrect) radio.checked = true;
+                    if (radio.value === 'incorrect' && !isCorrect) radio.checked = true;
+                }
+            });
+        };
+
+        window.saveGrade = async function (docId) {
+            const data = submissionsData[currentSubmissionIndex];
+            let score = 0;
+            const updatedAnswers = data.answers.map((ans, i) => {
+                if (!ans) return ans;
+                const radios = document.getElementsByName(`grade_${i}`);
+                let isCorrect = null;
+                for (const radio of radios) {
+                    if (radio.checked) {
+                        isCorrect = radio.value === 'correct';
+                        if (isCorrect) score++;
+                        break;
+                    }
+                }
+                return { ...ans, isCorrect };
+            });
+
+            try {
+                const docRef = doc(db, "quizResults", docId);
+                await setDoc(docRef, { answers: updatedAnswers, score: score, status: "Graded" }, { merge: true });
+                alert('Grade saved successfully!');
+                showDashboard();
+                loadData(); // Refresh table to show new score/status
+            } catch (error) {
+                console.error("Error saving grade:", error);
+                alert('Failed to save grade.');
+            }
+        };
+
+        window.checkPassword = async function () {
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+            const errorMsg = document.getElementById('loginError');
+
+            try {
+                errorMsg.style.display = 'none';
+                // Authenticate with Firebase
+                await signInWithEmailAndPassword(auth, email, password);
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('dashboardScreen').classList.remove('hidden');
+                loadData();
+                loadQuizStatus();
+            } catch (error) {
+                errorMsg.textContent = "Invalid email or password.";
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        window.switchTab = function (tab) {
+            if (tab === 'submissions') {
+                document.getElementById('submissionsTab').classList.remove('hidden');
+                document.getElementById('questionsTab').classList.add('hidden');
+                document.getElementById('tabSubmissions').className = '';
+                document.getElementById('tabSubmissions').style = 'flex: 1;';
+                document.getElementById('tabQuestions').className = 'btn-secondary';
+                document.getElementById('tabQuestions').style = 'flex: 1; background: var(--surface-light); color: var(--text); border: 1px solid var(--border);';
+            } else {
+                document.getElementById('submissionsTab').classList.add('hidden');
+                document.getElementById('questionsTab').classList.remove('hidden');
+                document.getElementById('tabSubmissions').className = 'btn-secondary';
+                document.getElementById('tabSubmissions').style = 'flex: 1; background: var(--surface-light); color: var(--text); border: 1px solid var(--border);';
+                document.getElementById('tabQuestions').className = '';
+                document.getElementById('tabQuestions').style = 'flex: 1;';
+                loadQuestions();
+            }
+        }
+
+        window.logoutAdmin = async function () {
+            await signOut(auth);
+            location.reload();
+        }
+
+        window.loadQuestions = async function () {
+            document.getElementById('qLoadingMsg').classList.remove('hidden');
+            const qList = document.getElementById('questionsList');
+            qList.innerHTML = '';
+            try {
+                const qSnap = await getDocs(collection(db, "questions"));
+                if (qSnap.empty) {
+                    document.getElementById('qLoadingMsg').textContent = "No questions found. You can seed the default 50 questions or add them manually.";
+                    return;
+                }
+                qSnap.forEach(docSnap => {
+                    const q = docSnap.data();
+                    const div = document.createElement('div');
+                    div.className = 'answer-block';
+                    div.innerHTML = `
+                        <div style="display: flex; justify-content: space-between;">
+                            <strong>${q.category || q.lesson || 'General'} (${q.type === 'multiple-choice' ? 'Multiple Choice' : 'Short Answer'})</strong>
+                            <button onclick="deleteQuestion('${docSnap.id}')" style="background: var(--danger); padding: 5px 10px; font-size: 0.8rem;">Delete</button>
+                        </div>
+                        <div style="margin-top:8px;"><strong>Q:</strong> ${q.question}</div>
+                        ${q.type === 'multiple-choice' && q.options ? `<div style="margin-top:5px; color: var(--text-muted);"><strong>Options:</strong> ${q.options.join(', ')}</div>` : ''}
+                        <div style="margin-top:5px; color: var(--success);"><strong>A:</strong> ${q.answer}</div>
+                        <div style="margin-top:5px; color: var(--warning);"><strong>Ref:</strong> ${q.reference || 'None'}</div>
+                    `;
+                    qList.appendChild(div);
+                });
+                document.getElementById('qLoadingMsg').classList.add('hidden');
+            } catch (error) {
+                console.error("Error loading questions", error);
+                document.getElementById('qLoadingMsg').textContent = "Error loading questions.";
+            }
+        }
+
+        window.toggleOptionsField = function () {
+            const type = document.getElementById('newQType').value;
+            const optionsInput = document.getElementById('newQOptions');
+            if (type === 'multiple-choice') {
+                optionsInput.style.display = 'block';
+            } else {
+                optionsInput.style.display = 'none';
+            }
+        }
+
+        window.addQuestion = async function () {
+            const type = document.getElementById('newQType').value;
+            const category = document.getElementById('newQCategory').value.trim();
+            const question = document.getElementById('newQText').value.trim();
+            const optionsStr = document.getElementById('newQOptions').value.trim();
+            const answer = document.getElementById('newQAnswer').value.trim();
+            const reference = document.getElementById('newQRef').value.trim();
+
+            if (!category || !question || !answer) return alert("Please fill in Category, Question, and Answer.");
+
+            let options = [];
+            if (type === 'multiple-choice') {
+                if (!optionsStr) return alert("Please provide options for Multiple Choice questions.");
+                options = optionsStr.split(',').map(s => s.trim());
+            }
+
+            try {
+                await addDoc(collection(db, "questions"), { category, type, question, options, answer, reference });
+                document.getElementById('newQCategory').value = '';
+                document.getElementById('newQText').value = '';
+                document.getElementById('newQOptions').value = '';
+                document.getElementById('newQAnswer').value = '';
+                document.getElementById('newQRef').value = '';
+                alert("Question added successfully!");
+                loadQuestions();
+            } catch (e) {
+                console.error(e);
+                alert("Failed to add question");
+            }
+        }
+
+        window.deleteQuestion = async function (id) {
+            if (!confirm("Are you sure you want to delete this question?")) return;
+            try {
+                await deleteDoc(doc(db, "questions", id));
+                loadQuestions();
+            } catch (e) {
+                console.error(e);
+                alert("Failed to delete question");
+            }
+        }
+
+        window.seedQuestions = async function () {
+            if (!confirm("This will upload standard demo questions into the database. Proceed?")) return;
+            document.getElementById('qLoadingMsg').textContent = "Seeding database... Please wait, this might take a few seconds.";
+            document.getElementById('qLoadingMsg').classList.remove('hidden');
+
+            const defaultQuestions = [
+                { category: "Science", type: "multiple-choice", question: "Which planet is known as the Red Planet?", options: ["Earth", "Mars", "Jupiter", "Saturn"], answer: "Mars", reference: "Astronomy" },
+                { category: "Mathematics", type: "multiple-choice", question: "What is the value of Pi to two decimal places?", options: ["3.12", "3.14", "3.16", "3.18"], answer: "3.14", reference: "Geometry" },
+                { category: "Technology", type: "short-answer", question: "What does HTML stand for?", options: [], answer: "HyperText Markup Language", reference: "Web Development" },
+                { category: "History", type: "multiple-choice", question: "In which year did the Titanic sink?", options: ["1912", "1905", "1898", "1923"], answer: "1912", reference: "20th Century History" },
+                { category: "Geography", type: "multiple-choice", question: "What is the largest ocean on Earth?", options: ["Atlantic Ocean", "Indian Ocean", "Pacific Ocean", "Arctic Ocean"], answer: "Pacific Ocean", reference: "Earth Science" }
+            ];
+
+            try {
+                for (const q of defaultQuestions) {
+                    await addDoc(collection(db, "questions"), q);
+                }
+                alert("Database seeded successfully!");
+                loadQuestions();
+            } catch (e) {
+                console.error("Error seeding", e);
+                alert("Error seeding database.");
+            }
+        }
+
+        window.loadData = async function () {
+            loadQuizStatus(); // Also refresh status when data is refreshed
+            document.getElementById('loadingMsg').classList.remove('hidden');
+            document.getElementById('submissionsTable').classList.add('hidden');
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            submissionsData = [];
+
+            try {
+                // Fetch records sorted by newest first
+                const q = query(collection(db, "quizResults"), orderBy("submittedAt", "desc"));
+                const querySnapshot = await getDocs(q);
+
+                let index = 0;
+                querySnapshot.forEach((doc) => {
+                    const currentIndex = index;
+                    const data = doc.data();
+                    data.id = doc.id;
+                    submissionsData.push(data);
+
+                    const dateObj = new Date(data.submittedAt);
+                    const dateString = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString();
+
+                    const tr = document.createElement('tr');
+                    tr.onclick = () => viewDetails(currentIndex);
+                    tr.innerHTML = `
+                        <td><strong>${data.fullname || 'Unknown'}</strong></td>
+                        <td><span class="status-badge ${data.status === 'Graded' ? 'status-graded' : 'status-pending'}">${data.status || 'Pending'}</span></td>
+                        <td>${data.score !== undefined ? data.score + ' / ' + data.totalQuestions : '-'}</td>
+                        <td>${data.totalQuestions || 0}</td>
+                        <td>${formatTime(data.timeTakenSeconds || 0)}</td>
+                        <td>${dateString}</td>
+                        <td><button class="btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">View</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                    index++;
+                });
+
+                document.getElementById('loadingMsg').classList.add('hidden');
+                document.getElementById('submissionsTable').classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                document.getElementById('loadingMsg').textContent = "Error loading data. Check console and Firebase Rules.";
+                document.getElementById('loadingMsg').style.color = "red";
+            }
+        }
+    </script>
+</body>
+
+</html>
