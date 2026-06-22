@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react'
-import { ChevronLeft, Check, X, Save, Sparkles } from 'lucide-react'
-import { db, doc, setDoc } from '../lib/firebase'
+import { ChevronLeft, Check, X, Save, Sparkles, Bot } from 'lucide-react'
+import { db, doc, setDoc, collection, addDoc } from '../lib/firebase'
 import { computeSimilaritySync } from '../lib/similarity'
+import { aiGradeAnswer } from '../lib/ai'
 
 export default function SubmissionDetail({ submission, onBack }) {
   const [answers, setAnswers] = useState(submission.answers || [])
   const [saving, setSaving] = useState(false)
+  const [aiGrading, setAiGrading] = useState(false)
   const [toast, setToast] = useState(null)
 
   const grade = useMemo(() => {
@@ -31,11 +33,42 @@ export default function SubmissionDetail({ submission, onBack }) {
     }))
   }
 
+  const aiGrade = async () => {
+    setAiGrading(true)
+    setToast({ type: 'info', message: 'AI grading short answers...' })
+    const updated = []
+    for (const a of answers) {
+      if (!a) { updated.push(a); continue }
+      if (a.questionType === 'multiple-choice') {
+        const sim = a.userAnswer === a.correctAnswer ? 100 : 0
+        updated.push({ ...a, isCorrect: sim >= 70, similarity: sim })
+      } else {
+        try {
+          const result = await aiGradeAnswer(a.question, a.correctAnswer, a.userAnswer)
+          updated.push({ ...a, isCorrect: result.score >= 70, similarity: result.score, aiFeedback: result.feedback })
+        } catch {
+          const sim = computeSimilaritySync(a.userAnswer || '', a.correctAnswer || '')
+          updated.push({ ...a, isCorrect: sim >= 70, similarity: sim })
+        }
+      }
+    }
+    setAnswers(updated)
+    setAiGrading(false)
+    setToast({ type: 'success', message: 'AI grading complete' })
+    setTimeout(() => setToast(null), 3000)
+  }
+
   const handleSave = async () => {
     setSaving(true)
     try {
       const score = answers.filter(a => a && a.isCorrect === true).length
       await setDoc(doc(db, "quizResults", submission.id), { ...submission, answers, score, status: "Graded" }, { merge: true })
+      await addDoc(collection(db, 'auditLogs'), {
+        action: 'grade_saved',
+        details: { submissionId: submission.id, score, total: answers.filter(a => a).length },
+        userEmail: 'admin',
+        timestamp: new Date().toISOString(),
+      }).catch(() => {})
       setToast({ type: 'success', message: 'Grade saved!' })
       setTimeout(() => setToast(null), 3000)
     } catch (e) { setToast({ type: 'error', message: 'Failed to save grade' }); setTimeout(() => setToast(null), 3000) }
@@ -61,6 +94,7 @@ export default function SubmissionDetail({ submission, onBack }) {
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <button onClick={autoGrade} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium hover:bg-amber-500/20 transition-all cursor-pointer"><Sparkles className="w-4 h-4" /> Auto</button>
+          <button onClick={aiGrade} disabled={aiGrading} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium hover:bg-indigo-500/20 transition-all cursor-pointer disabled:opacity-50"><Bot className="w-4 h-4" /> {aiGrading ? 'AI Grading...' : 'AI Grade'}</button>
           <button onClick={handleSave} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-all cursor-pointer disabled:opacity-50"><Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save'}</button>
         </div>
       </div>

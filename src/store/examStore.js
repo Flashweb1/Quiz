@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { createTrustScore } from '../lib/trustScore'
 import { demoQuestions } from '../lib/demoQuestions'
+import { getFormatDefaults } from '../lib/formatPresets'
 
 const useExamStore = create((set, get) => ({
   // Auth
@@ -8,6 +9,7 @@ const useExamStore = create((set, get) => ({
   userEmail: null,
   userName: null,
   isAuthenticated: false,
+  userRole: null,
 
   // Quiz state
   allQuestions: [],
@@ -20,6 +22,10 @@ const useExamStore = create((set, get) => ({
   quizStartTime: null,
   isQuizActive: false,
   quizStatus: 'idle',
+
+  // Exam format
+  examFormat: null,
+  examConfig: null,
 
   // Settings
   showReference: true,
@@ -37,6 +43,9 @@ const useExamStore = create((set, get) => ({
   submissions: [],
   questions: [],
 
+  // Question pool
+  questionPoolSize: 0,
+
   // Demo mode
   useDemoData: false,
 
@@ -46,8 +55,10 @@ const useExamStore = create((set, get) => ({
     userEmail: user?.email || null,
     userName: user?.displayName || user?.email || null,
     isAuthenticated: !!user,
+    userRole: user?.role || null,
   }),
-  clearUser: () => set({ user: null, userEmail: null, userName: null, isAuthenticated: false }),
+  setUserRole: (role) => set({ userRole: role }),
+  clearUser: () => set({ user: null, userEmail: null, userName: null, isAuthenticated: false, userRole: null }),
 
   // Settings
   toggleReference: () => set((s) => ({ showReference: !s.showReference })),
@@ -58,22 +69,40 @@ const useExamStore = create((set, get) => ({
   useDemoQuestions: () => set({ allQuestions: demoQuestions, useDemoData: true }),
   setQuestions: (questions) => set({ questions }),
 
-  startQuiz: (questions) => {
+  setExamConfig: (formatId, config) => set({
+    examFormat: formatId,
+    examConfig: config,
+    showReference: config?.referenceEnabled ?? true,
+    allowHints: config?.hintsEnabled ?? true,
+  }),
+
+  setQuestionPoolSize: (size) => set({ questionPoolSize: size }),
+
+  startQuiz: (questions, config) => {
     const qs = questions || get().allQuestions
-    const shuffled = [...qs].sort(() => Math.random() - 0.5)
+    const useConfig = config || get().examConfig || getFormatDefaults('formal-exam')
+    const poolSize = get().questionPoolSize
+    let pool = useConfig.questionOrder === 'fixed' ? [...qs] : [...qs].sort(() => Math.random() - 0.5)
+    if (poolSize > 0 && poolSize < pool.length) {
+      pool = pool.slice(0, poolSize)
+    }
+    const durationSec = (useConfig.duration || 0) * 60
     set({
-      currentQuestions: shuffled,
+      examConfig: useConfig,
+      currentQuestions: pool,
       currentQuestionIndex: 0,
       userAnswers: [],
-      flaggedQuestions: new Array(shuffled.length).fill(false),
-      timeRemaining: shuffled.length * 90,
-      totalTime: shuffled.length * 90,
+      flaggedQuestions: new Array(pool.length).fill(false),
+      timeRemaining: durationSec,
+      totalTime: durationSec,
       quizStartTime: Date.now(),
       isQuizActive: true,
       quizStatus: 'active',
       cheatWarnings: 0,
       proctoringEvents: [],
       trustScore: createTrustScore(),
+      showReference: useConfig.referenceEnabled ?? true,
+      allowHints: useConfig.hintsEnabled ?? true,
     })
   },
 
@@ -119,9 +148,14 @@ const useExamStore = create((set, get) => ({
     quizStartTime: null,
     isQuizActive: false,
     quizStatus: 'idle',
+    examFormat: null,
+    examConfig: null,
+    questionPoolSize: 0,
     cheatWarnings: 0,
     proctoringEvents: [],
     trustScore: createTrustScore(),
+    showReference: true,
+    allowHints: true,
   }),
 
   // Admin
@@ -133,6 +167,8 @@ const useExamStore = create((set, get) => ({
     const s = get()
     if (!s.isQuizActive) return
     const state = {
+      examFormat: s.examFormat,
+      examConfig: s.examConfig,
       currentQuestions: s.currentQuestions,
       currentQuestionIndex: s.currentQuestionIndex,
       userAnswers: s.userAnswers,
@@ -141,6 +177,8 @@ const useExamStore = create((set, get) => ({
       totalTime: s.totalTime,
       quizStartTime: s.quizStartTime,
       quizStatus: s.quizStatus,
+      showReference: s.showReference,
+      allowHints: s.allowHints,
     }
     localStorage.setItem('quizState', JSON.stringify(state))
   },

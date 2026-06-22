@@ -113,7 +113,7 @@
 
 <body>
     <div class="container">
-        <h1 style="color: var(--text-muted);">Quizzy <span style="color: var(--primary);">Live</span> Presenter</h1>
+        <h1 style="color: var(--text-muted);">Quizzer <span style="color: var(--primary);">Live</span> Presenter</h1>
 
         <!-- Setup Screen -->
         <div id="setupScreen" class="card">
@@ -155,20 +155,8 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyC4RxjQ_dP1Mxur6cF7QWCZRYHFl9gobSs",
-            authDomain: "quiz-38d2c.firebaseapp.com",
-            projectId: "quiz-38d2c",
-            storageBucket: "quiz-38d2c.firebasestorage.app",
-            messagingSenderId: "749897575230",
-            appId: "1:749897575230:web:e4d729f197938e71999a6f"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        import { db } from "./firebase-config.js";
+        import { collection, getDocs, doc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
         let pin = "";
         let sessionQuestions = [];

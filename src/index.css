@@ -1,40 +1,29 @@
 @import "tailwindcss";
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+@variant dark (&:where(.dark, .dark *));
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #020617;
-  color: #f1f5f9;
+  background: #F7F6F2;
+  color: #1A1825;
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+.dark body,
+body.dark {
+  background: #0B0A1A;
+  color: #E2E0F0;
+}
+
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #475569; }
+::-webkit-scrollbar-thumb { background: #C4C0D8; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #A09CBD; }
+
+.dark ::-webkit-scrollbar-thumb { background: #3D3A55; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #5A5780; }
 
 input, textarea, select, button { font-family: inherit; }
-
-/* Animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
-}
-
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-float { animation: float 3s ease-in-out infinite; }
-.animate-glow { animation: pulse-glow 3s ease-in-out infinite; }
-.animate-slide-up { animation: slide-up 0.5s ease-out; }

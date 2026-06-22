@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
-import { getFirestore, collection, addDoc, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy, onSnapshot, writeBatch } from 'firebase/firestore'
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from 'firebase/auth'
+import { getFirestore, collection, addDoc, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy, where, onSnapshot, writeBatch } from 'firebase/firestore'
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail } from 'firebase/auth'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -18,6 +18,6 @@ const settingsDocRef = doc(db, "settings", "quizAccess")
 
 export {
   db, auth, settingsDocRef,
-  collection, addDoc, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy, onSnapshot, writeBatch,
-  signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile
+  collection, addDoc, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy, where, onSnapshot, writeBatch,
+  signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail
 }

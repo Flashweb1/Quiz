@@ -425,7 +425,7 @@
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "quizzy_results.csv");
+            link.setAttribute("download", "quizzer_results.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -434,22 +434,10 @@
 
     <!-- Firebase Integration -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc, setDoc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+        import { db, auth } from "./firebase-config.js";
+        import { collection, getDocs, query, orderBy, doc, getDoc, setDoc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+        import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyC4RxjQ_dP1Mxur6cF7QWCZRYHFl9gobSs",
-            authDomain: "quiz-38d2c.firebaseapp.com",
-            projectId: "quiz-38d2c",
-            storageBucket: "quiz-38d2c.firebasestorage.app",
-            messagingSenderId: "749897575230",
-            appId: "1:749897575230:web:e4d729f197938e71999a6f"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
         const settingsDocRef = doc(db, "settings", "quizAccess");
 
         async function loadQuizStatus() {

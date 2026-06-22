@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memory Verses Quiz (Age 16–19)</title>
+    <title>Quizzer — Memory Verses Quiz</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -117,24 +117,8 @@
     <div id="result"></div>
 
     <script type="module">
-        // Import Firebase modules
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js"; // Note: getAnalytics is not imported as it's not used in the current script.
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyC4RxjQ_dP1Mxur6cF7QWCZRYHFl9gobSs",
-            authDomain: "quiz-38d2c.firebaseapp.com",
-            projectId: "quiz-38d2c",
-            storageBucket: "quiz-38d2c.firebasestorage.app",
-            messagingSenderId: "749897575230",
-            appId: "1:749897575230:web:e4d729f197938e71999a6f",
-            measurementId: "G-FVL08KDFHQ"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        // If you intend to use Firebase Analytics, you'll need to import getAnalytics and initialize it here.
+        import { db } from "./firebase-config.js";
+        import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
         const questions = [
             { question: "According to the lesson New birth in Christ, what does the memory verse teach about a person who is in Christ regarding old things and new life?", answer: "Therefore if any man be in Christ he is a new creature old things are passed away behold all things are become new (2 Corinthians 5:17)" },

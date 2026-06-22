@@ -35,31 +35,18 @@ export default function Timer() {
 
   const phaseStyles = {
     normal: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    warning: 'bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse',
-    critical: 'bg-red-500/10 text-red-400 border-red-500/20 animate-pulse',
+    warning: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    critical: 'bg-red-500/10 text-red-400 border-red-500/20',
   }
 
-  const barStyles = {
-    normal: 'bg-emerald-500',
-    warning: 'bg-amber-500',
-    critical: 'bg-red-500',
-  }
-
-  const Icon = phase === 'normal' ? Clock : phase === 'warning' ? AlertTriangle : TimerIcon
+  const Icon = phase === 'normal' ? Clock : AlertTriangle
 
   return (
-    <div className={`flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-4 sm:py-2 rounded-xl border transition-all duration-300 ${phaseStyles[phase]}`}>
-      <Icon className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-      <span className="font-mono text-sm sm:text-lg font-bold tabular-nums tracking-wider">
+    <div className={`flex items-center gap-1 px-2 py-1 rounded-lg border transition-all duration-300 ${phaseStyles[phase]}`}>
+      <Icon className="w-3 h-3" />
+      <span className={`font-mono text-sm font-bold tabular-nums tracking-wider ${phase === 'critical' ? 'animate-pulse' : ''}`}>
         {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
       </span>
-      {phase === 'critical' && (
-        <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-widest">Time!</span>
-      )}
-      <div className="hidden sm:block w-16 h-1.5 rounded-full bg-slate-700/50 overflow-hidden ml-1">
-        <div className={`h-full rounded-full transition-all duration-1000 ease-linear ${barStyles[phase]}`}
-          style={{ width: `${pctRemaining}%` }} />
-      </div>
     </div>
   )
 }

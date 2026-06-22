@@ -1,37 +1,56 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Shield, AlertTriangle, Search, MessageSquare, XCircle, ChevronLeft } from 'lucide-react'
+import { db, collection, getDocs, query, orderBy, onSnapshot } from '../lib/firebase'
 
-const mockSessions = [
-  { id: 1, name: 'John Doe', trustScore: 92, status: 'good', faceDetected: true, alerts: [] },
-  { id: 2, name: 'Sarah Smith', trustScore: 64, status: 'warning', faceDetected: true, alerts: ['Looked away for 15s'] },
-  { id: 3, name: 'Mike Johnson', trustScore: 55, status: 'danger', faceDetected: true, alerts: ['Multiple faces detected', 'Tab switch detected'] },
-  { id: 4, name: 'Emily Davis', trustScore: 88, status: 'good', faceDetected: true, alerts: [] },
-  { id: 5, name: 'Alex Brown', trustScore: 45, status: 'danger', faceDetected: false, alerts: ['Face not visible'] },
-]
-
-const alertLog = [
-  { time: '14:32:23', name: 'Sarah Smith', message: 'Looked away for 15s' },
-  { time: '14:31:45', name: 'Mike Johnson', message: 'Multiple faces detected' },
-  { time: '14:30:12', name: 'Alex Brown', message: 'Screen switched to notes' },
-  { time: '14:28:50', name: 'Mike Johnson', message: 'Tab switch detected' },
-  { time: '14:25:00', name: 'Alex Brown', message: 'Face not visible' },
-]
-
-export default function LiveProctoringPage({ onBack }) {
+export default function LiveProctoringPage() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
-  const filtered = mockSessions.filter(s => s.name.toLowerCase().includes(search.toLowerCase()))
-  const alertCount = mockSessions.filter(s => s.status !== 'good').length
+  const [submissions, setSubmissions] = useState([])
+  const [alertLog, setAlertLog] = useState([])
+
+  useEffect(() => {
+    const q = query(collection(db, "quizResults"), orderBy("submittedAt", "desc"))
+    const unsub = onSnapshot(q, snap => {
+      const data = []
+      snap.forEach(d => data.push({ id: d.id, ...d.data() }))
+      setSubmissions(data.slice(0, 50))
+
+      const recentAlerts = []
+      data.forEach(s => {
+        if (s.antiCheatLog && Array.isArray(s.antiCheatLog)) {
+          s.antiCheatLog.forEach((entry, i) => {
+            if (typeof entry === 'string') {
+              recentAlerts.push({ time: s.submittedAt ? new Date(s.submittedAt).toLocaleTimeString() : '', name: s.fullname || 'Unknown', message: entry })
+            }
+          })
+        }
+      })
+      setAlertLog(recentAlerts.slice(0, 20))
+    })
+    return () => unsub()
+  }, [])
+
+  const sessions = submissions.map(s => {
+    const score = s.trustScore || 100
+    const status = score >= 80 ? 'good' : score >= 50 ? 'warning' : 'danger'
+    const alerts = s.antiCheatLog && Array.isArray(s.antiCheatLog) ? s.antiCheatLog.filter(e => typeof e === 'string').slice(0, 3) : []
+    return { id: s.id, name: s.fullname || 'Unknown', trustScore: score, status, faceDetected: true, alerts, submittedAt: s.submittedAt, score }
+  })
+
+  const filtered = sessions.filter(s => s.name.toLowerCase().includes(search.toLowerCase()))
+  const alertCount = sessions.filter(s => s.status !== 'good').length
 
   return (
     <div className="min-h-screen bg-slate-950">
       <div className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={onBack} className="text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"><ChevronLeft className="w-5 h-5" /></button>
+            <button onClick={() => navigate('/admin')} className="text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"><ChevronLeft className="w-5 h-5" /></button>
             <h1 className="text-lg font-bold text-slate-100">Live Proctoring</h1>
-            <span className="text-sm text-slate-500">{mockSessions.length} Active</span>
+            <span className="text-sm text-slate-500">{sessions.length} Active</span>
             {alertCount > 0 && (
               <span className="flex items-center gap-1 text-sm text-red-400 bg-red-500/10 px-2 py-1 rounded-lg"><AlertTriangle className="w-3.5 h-3.5" /> {alertCount}</span>
             )}
